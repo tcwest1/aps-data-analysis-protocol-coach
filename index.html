@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APS Data Analysis Protocol Coach</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --aps-teal:    #00605A;
+    --aps-teal-lt: #007E77;
+    --aps-gold:    #C8921A;
+    --aps-gold-lt: #FAEFD6;
+    --ink:         #1A1F1E;
+    --ink-mid:     #445250;
+    --ink-light:   #7B9290;
+    --surface:     #F6F8F7;
+    --white:       #FFFFFF;
+    --border:      #D4DFDE;
+    --step-1:      #00605A;
+    --step-2:      #2D7FC1;
+    --step-3:      #7B4DB8;
+    --step-4:      #C8501A;
+    --step-5:      #1A7A3C;
+    --radius:      10px;
+    --shadow:      0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--aps-teal);
+    color: var(--white);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .logo-mark {
+    width: 38px; height: 38px;
+    background: var(--aps-gold);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--white);
+    flex-shrink: 0;
+  }
+  .reset-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 6px;
+    color: rgba(255,255,255,0.85);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+  }
+  .reset-btn:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.7);
+  }
+
+  .header-text h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+  }
+  .header-text p {
+    font-size: 11px;
+    opacity: 0.75;
+    margin-top: 1px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ── STEP TRACKER ── */
+  .step-tracker {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    display: flex;
+    gap: 0;
+    flex-shrink: 0;
+    overflow-x: auto;
+  }
+  .step-pill {
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    cursor: default;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .step-pill.active   { color: var(--aps-teal); border-color: var(--aps-teal); }
+  .step-pill.done     { color: var(--ink-mid); }
+  .step-pill.done::before { content: '✓ '; color: var(--aps-teal); }
+
+  /* ── CHAT AREA ── */
+  .chat-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  /* ── MESSAGES ── */
+  .msg {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    max-width: 800px;
+  }
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+  .msg.assistant { align-self: flex-start; }
+
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .msg.assistant .avatar { background: var(--aps-teal); color: var(--white); font-family: 'DM Serif Display', serif; font-size: 15px; }
+  .msg.user .avatar      { background: var(--aps-gold); color: var(--white); }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    line-height: 1.6;
+    font-size: 14px;
+    max-width: 640px;
+  }
+  .msg.assistant .bubble {
+    background: var(--white);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+  }
+  .msg.user .bubble {
+    background: var(--aps-teal);
+    color: var(--white);
+  }
+
+  .bubble p { margin-bottom: 8px; }
+  .bubble p:last-child { margin-bottom: 0; }
+  .bubble strong { font-weight: 600; }
+  .bubble em { font-style: italic; color: var(--ink-mid); }
+  .msg.user .bubble em { color: rgba(255,255,255,0.8); }
+
+  /* menu buttons inside bubbles */
+  .menu-options {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 12px;
+  }
+  .menu-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: var(--aps-teal);
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    line-height: 1.4;
+  }
+  .menu-btn:hover {
+    background: var(--aps-gold-lt);
+    border-color: var(--aps-gold);
+    transform: translateX(2px);
+  }
+  .menu-btn:active { transform: translateX(0); }
+
+  /* step badge in bubble */
+  .step-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: white;
+  }
+
+  /* tip blocks */
+  .tip-block {
+    background: var(--aps-gold-lt);
+    border-left: 3px solid var(--aps-gold);
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--ink-mid);
+  }
+
+  /* caution / redirect block */
+  .caution-block {
+    background: #FFF4ED;
+    border-left: 3px solid #C8501A;
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #5C2A0A;
+  }
+
+  /* typing indicator */
+  .typing-bubble {
+    background: var(--white);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    padding: 12px 18px;
+    border-radius: var(--radius);
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  .typing-dot {
+    width: 7px; height: 7px;
+    background: var(--ink-light);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* ── INPUT AREA ── */
+  .input-area {
+    background: var(--white);
+    border-top: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  textarea {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    min-height: 44px;
+    max-height: 140px;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--aps-teal); }
+  textarea::placeholder { color: var(--ink-light); }
+
+  .send-btn {
+    width: 44px; height: 44px;
+    background: var(--aps-teal);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .send-btn:hover { background: var(--aps-teal-lt); }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn:disabled { background: var(--ink-light); cursor: not-allowed; }
+  .send-btn svg { fill: white; }
+
+  .disclaimer {
+    font-size: 11px;
+    color: var(--ink-light);
+    text-align: center;
+    padding: 4px 0 0;
+    flex-basis: 100%;
+  }
+  .input-wrap { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+</style>
+</head>
+<body>
+
+<div id="app" style="display:flex; flex-direction:column; height:100vh;">
+
+<header>
+  <div class="logo-mark">A</div>
+  <div class="header-text">
+    <h1>APS Data Analysis Protocol Coach</h1>
+    <p>Albuquerque Public Schools · SAPR</p>
+  </div>
+  <button class="reset-btn" onclick="resetSession()" title="Start a new session">↺ New Session</button>
+</header>
+
+<div class="step-tracker" id="stepTracker">
+  <div class="step-pill" id="pill-1">Context &amp; Focus</div>
+  <div class="step-pill" id="pill-2">Predictions</div>
+  <div class="step-pill" id="pill-3">Observations</div>
+  <div class="step-pill" id="pill-4">Inferences</div>
+  <div class="step-pill" id="pill-5">Next Steps</div>
+</div>
+
+<div class="chat-container" id="chat"></div>
+
+<div class="input-area">
+  <div class="input-wrap">
+    <div class="input-row">
+      <textarea id="userInput" placeholder="Type your response or question here…" rows="1"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <svg width="18" height="18" viewBox="0 0 20 20"><path d="M2 10L18 2L14 10L18 18L2 10Z"/></svg>
+      </button>
+    </div>
+    <div class="disclaimer">Powered by Claude · APS / SAPR confidential use</div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+const SYSTEM_PROMPT = `You are the APS Data Analysis Protocol Coach, built for Albuquerque Public Schools (APS Rising / SAPR). You are a thought partner and instructional coach for ONE educator working through the APS Data Analysis Protocol. You do not analyze data FOR them — you guide THEM through the reasoning and teach the discipline of each step. You operate as a MENU-DRIVEN experience: the user always chooses what to do next from a numbered list. You never force a rigid unbroken sequence — you offer the path and let them pick it.
+
+WHY THIS EXISTS: The hardest part of using data well isn't reading numbers — it's (1) not letting existing bias decide the answer before looking at the data, and (2) not leaving with a vague "that was nice" and no action. Most people skip steps not because they're lazy but because no one taught them how. Teach, don't just enforce.
+
+THE FIVE STEPS (content is fixed; order the user visits them is their choice, with light guardrails):
+1. Context and Focus — lock ONE focus, data source, grade level(s), time period, and (optionally) a student group.
+2. Predictions — BEFORE looking at data, surface assumptions/predictions/wonderings. Makes bias visible.
+3. Observations — facts only, from the actual data.
+4. Inferences and Implications — generate explanations for observations; identify what additional data would confirm/contradict each.
+5. Next Steps — land one concrete action with a weekly measure to track it.
+
+MENU STRUCTURE — this is your core interaction loop. After any step completes, return to a short contextual menu: "What would you like to do next? [options]"
+
+MAIN MENU OPTIONS:
+1️⃣ Start from the top — walk through all 5 steps in order
+2️⃣ Jump to a specific step
+3️⃣ See an example of a strong prediction / observation / inference
+4️⃣ I have a 'because' or explanation I'm not sure belongs in this step — check it for me
+5️⃣ Wrap up — help me turn what I've got into a Next Steps plan
+
+After ANY step is completed, offer a short menu: options to move to the next step, jump elsewhere, or pause.
+If the user picks Step 3, 4, or 5 before completing earlier steps, don't block them — flag it once briefly then follow their call.
+
+HOW YOU COACH WITHIN A STEP:
+- State the step's purpose in one sentence
+- Give its sentence starters
+- Wait for their response; ask follow-up questions, never write their predictions/observations/inferences for them
+- Keep turns short and focused
+
+THE ONE RULE YOU PROTECT — no causal language in Steps 2 & 3:
+Watch for "because," "therefore," "it seems," "however," "due to," "the reason is" in Predictions or Observations.
+If it shows up, flag it warmly: "That 'because' is doing explanation work — save it for Step 4, so your theory doesn't steer what you actually see in the data. Want to restate just the [prediction/observation] itself?"
+In Observations, redirect interpretation to the observable fact. Push bare snapshots ("25%") toward comparative/temporal facts ("dropped from 83% in 22-23 to 46% in 25-26"). Prompt for patterns, trends, relationships, surprises.
+
+STEP 4: "because" is finally welcome. For each explanation, ask what additional data would confirm or contradict it. Push from symptom toward root cause.
+
+STEP 5: must land concrete — a Reason for Action, a Specific Action, and a weekly Measurement. Don't let this stay vague.
+
+TONE: Warm, direct, a coach who knows this protocol cold and never makes anyone feel dumb for slipping. Every assumption is a building block for learning. When closing a turn with a question, use professional language — never casual phrases like "What's on your mind?" Prefer "What would you like to focus on today?" or "What data are you working with?" or a direct, specific question tied to the current step.
+
+FORMATTING RULES — CRITICAL:
+- Use plain text only. No markdown headers (##), no bold (**text**), no bullet dashes with asterisks or hyphens at start of lines for prose.
+- You MAY use emoji sparingly (1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ✓ ✦) for menu items and key highlights.
+- For menu options, list them on separate lines starting with the emoji number.
+- Keep paragraphs short (2-4 sentences max).
+- When you want to signal a step name, write it plainly: "Step 2 — Predictions"
+- Never use markdown formatting. The UI will handle visual rendering.
+
+STEP TRACKING — when you are actively working IN a step (not just mentioning it), start your message with a special tag on its own line:
+[STEP:1] for Context and Focus
+[STEP:2] for Predictions  
+[STEP:3] for Observations
+[STEP:4] for Inferences and Implications
+[STEP:5] for Next Steps
+[STEP:MENU] when showing the main menu or a between-step menu
+Omit the tag for casual in-conversation turns that aren't a step transition.`;
+
+const STEP_COLORS = ['#00605A','#2D7FC1','#7B4DB8','#C8501A','#1A7A3C'];
+const STEP_LABELS = ['Context & Focus','Predictions','Observations','Inferences','Next Steps'];
+
+let messages = [];
+let isLoading = false;
+let completedSteps = new Set();
+let currentStep = 0;
+let messageCount = 0;
+const MAX_MESSAGES = 30;
+
+const chat = document.getElementById('chat');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+
+// Auto-resize textarea
+userInput.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+});
+
+userInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+function updateStepTracker(stepNum) {
+  if (stepNum >= 1 && stepNum <= 5) {
+    currentStep = stepNum;
+    completedSteps.add(stepNum);
+  }
+  for (let i = 1; i <= 5; i++) {
+    const pill = document.getElementById('pill-' + i);
+    pill.className = 'step-pill';
+    if (i === currentStep) pill.classList.add('active');
+    else if (completedSteps.has(i) && i !== currentStep) pill.classList.add('done');
+  }
+}
+
+function parseStepTag(text) {
+  const match = text.match(/^\[STEP:(\w+)\]/m);
+  if (!match) return { step: null, clean: text };
+  const tag = match[1];
+  const clean = text.replace(/^\[STEP:\w+\]\n?/m, '');
+  const step = parseInt(tag);
+  return { step: isNaN(step) ? tag : step, clean };
+}
+
+function formatBubbleContent(text, isUser) {
+  // Detect menu-style lines (starting with number emoji)
+  const lines = text.split('\n');
+  let html = '';
+  let inMenu = false;
+  let menuHtml = '';
+  let currentParagraph = '';
+
+  const flushParagraph = () => {
+    if (currentParagraph.trim()) {
+      html += '<p>' + currentParagraph.trim() + '</p>';
+      currentParagraph = '';
+    }
+  };
+  const flushMenu = () => {
+    if (inMenu && menuHtml) {
+      html += '<div class="menu-options">' + menuHtml + '</div>';
+      menuHtml = '';
+      inMenu = false;
+    }
+  };
+
+  const MENU_EMOJI = /^([1-5]️⃣|✦|→)/;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) {
+      if (inMenu) flushMenu();
+      flushParagraph();
+      continue;
+    }
+    if (!isUser && MENU_EMOJI.test(line.trim())) {
+      flushParagraph();
+      if (!inMenu) inMenu = true;
+      const btnText = line.trim();
+      menuHtml += `<button class="menu-btn" onclick="clickMenu(this)">${escHtml(btnText)}</button>`;
+    } else {
+      if (inMenu) flushMenu();
+      if (currentParagraph) currentParagraph += ' ';
+      currentParagraph += line.trim();
+    }
+  }
+  flushMenu();
+  flushParagraph();
+  return html || '<p>' + escHtml(text) + '</p>';
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function clickMenu(btn) {
+  const text = btn.innerText;
+  userInput.value = text;
+  sendMessage();
+}
+
+function appendMessage(role, text, stepNum) {
+  const msg = document.createElement('div');
+  msg.className = 'msg ' + role;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = role === 'assistant' ? 'A' : 'Y';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+
+  if (role === 'assistant' && stepNum && stepNum !== 'MENU' && typeof stepNum === 'number') {
+    const badge = document.createElement('div');
+    badge.className = 'step-badge';
+    badge.style.background = STEP_COLORS[stepNum - 1];
+    badge.textContent = 'Step ' + stepNum + ' — ' + STEP_LABELS[stepNum - 1];
+    bubble.appendChild(badge);
+  }
+
+  bubble.innerHTML += formatBubbleContent(text, role === 'user');
+  msg.appendChild(avatar);
+  msg.appendChild(bubble);
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+  return msg;
+}
+
+function showTyping() {
+  const msg = document.createElement('div');
+  msg.className = 'msg assistant';
+  msg.id = 'typing';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = 'A';
+  const bubble = document.createElement('div');
+  bubble.className = 'typing-bubble';
+  bubble.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  msg.appendChild(avatar);
+  msg.appendChild(bubble);
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+async function sendMessage() {
+  const text = userInput.value.trim();
+  if (!text || isLoading) return;
+
+  // Hard session limit
+  if (messageCount >= MAX_MESSAGES) {
+    appendMessage('assistant', 'This session has reached its message limit. Click "↺ New Session" to start a fresh session and continue your work.');
+    userInput.disabled = true;
+    sendBtn.disabled = true;
+    return;
+  }
+
+  userInput.value = '';
+  userInput.style.height = 'auto';
+
+  appendMessage('user', text);
+  messages.push({ role: 'user', content: text });
+  messageCount++;
+
+  isLoading = true;
+  sendBtn.disabled = true;
+  showTyping();
+
+  try {
+    const MAX_HISTORY = 20;
+    const trimmedMessages = messages.slice(-MAX_HISTORY);
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
+        system: [
+          {
+            type: 'text',
+            text: SYSTEM_PROMPT,
+            cache_control: { type: 'ephemeral' }
+          }
+        ],
+        messages: trimmedMessages
+      })
+    });
+
+    const data = await resp.json();
+    const reply = data.content?.[0]?.text || 'Sorry, I had trouble responding. Please try again.';
+
+    const { step, clean } = parseStepTag(reply);
+    if (step && typeof step === 'number') updateStepTracker(step);
+
+    removeTyping();
+    appendMessage('assistant', clean, step);
+    messages.push({ role: 'assistant', content: reply });
+
+    // Warn user when approaching limit
+    if (messageCount === MAX_MESSAGES - 5) {
+      appendMessage('assistant', 'Heads up — this session has 5 exchanges remaining. Wrap up your Next Steps or click "↺ New Session" to continue in a fresh session.');
+    }
+
+  } catch (err) {
+    removeTyping();
+    appendMessage('assistant', 'Something went wrong connecting to the coaching engine. Please check your connection and try again.');
+    console.error(err);
+  } finally {
+    isLoading = false;
+    sendBtn.disabled = false;
+    userInput.focus();
+  }
+}
+
+// Kick off the conversation
+async function initCoach() {
+  isLoading = true;
+  sendBtn.disabled = true;
+  showTyping();
+
+  const openingPrompt = "Hello! Please introduce yourself as the APS Data Analysis Protocol Coach and present the main menu.";
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
+        system: [
+          {
+            type: 'text',
+            text: SYSTEM_PROMPT,
+            cache_control: { type: 'ephemeral' }
+          }
+        ],
+        messages: [{ role: 'user', content: openingPrompt }]
+      })
+    });
+
+    const data = await resp.json();
+    const reply = data.content?.[0]?.text || "Hi! I'm your APS Data Analysis Protocol Coach. Let's get started.";
+
+    const { step, clean } = parseStepTag(reply);
+    removeTyping();
+    appendMessage('assistant', clean, step);
+    messages.push({ role: 'user', content: openingPrompt });
+    messages.push({ role: 'assistant', content: reply });
+
+  } catch (err) {
+    removeTyping();
+    appendMessage('assistant', "Hi! I'm your APS Data Analysis Protocol Coach. I'm here to guide you through the five-step data analysis process. What would you like to do?\n\n1️⃣ Start from the top — walk through all 5 steps in order\n2️⃣ Jump to a specific step\n3️⃣ See an example of a strong prediction / observation / inference\n4️⃣ I have a 'because' or explanation I'm not sure belongs in this step — check it for me\n5️⃣ Wrap up — help me turn what I've got into a Next Steps plan");
+  } finally {
+    isLoading = false;
+    sendBtn.disabled = false;
+  }
+}
+
+function resetSession() {
+  if (isLoading) return;
+  messages = [];
+  completedSteps = new Set();
+  currentStep = 0;
+  messageCount = 0;
+  userInput.disabled = false;
+  sendBtn.disabled = false;
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById('pill-' + i).className = 'step-pill';
+  }
+  document.getElementById('chat').innerHTML = '';
+  initCoach();
+}
+
+// Automatically start the coach on load
+window.addEventListener('DOMContentLoaded', () => {
+  initCoach();
+});
+</script>
+</body>
+</html>
