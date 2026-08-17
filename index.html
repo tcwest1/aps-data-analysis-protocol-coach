@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APS Data Analysis Protocol Coach</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --aps-teal:    #0F4E67;
+    --aps-teal-lt: #1A6A8A;
+    --aps-gold:    #E8A93C;
+    --aps-gold-lt: #FDF3E0;
+    --ink:         #111827;
+    --ink-mid:     #3D5A6B;
+    --ink-light:   #7A9BAD;
+    --surface:     #F2F6F9;
+    --white:       #FFFFFF;
+    --border:      #C5D8E3;
+    --step-1:      #0F4E67;
+    --step-2:      #1A7FB8;
+    --step-3:      #6B3FA0;
+    --step-4:      #C05621;
+    --step-5:      #1B7A4A;
+    --radius:      10px;
+    --shadow:      0 2px 14px rgba(15,78,103,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0F4E67 0%, #0D3F55 100%);
+    color: var(--white);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 12px rgba(15,78,103,0.30);
+  }
+
+  .reset-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 6px;
+    color: rgba(255,255,255,0.85);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+  }
+  .reset-btn:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.7);
+  }
+
+  .header-text h1 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .header-text p {
+    font-size: 11px;
+    opacity: 0.75;
+    margin-top: 1px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ── STEP TRACKER ── */
+  .step-tracker {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    display: flex;
+    flex-shrink: 0;
+    overflow-x: hidden;
+  }
+  .step-pill {
+    padding: 8px 10px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    cursor: default;
+    flex: 1;
+    text-align: center;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .step-pill.active   { color: var(--aps-teal); border-color: var(--aps-teal); }
+  .step-pill.done     { color: var(--ink-mid); }
+  .step-pill.done::before { content: '✓ '; color: var(--aps-teal); }
+
+  /* ── CHAT AREA ── */
+  .chat-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  /* ── MESSAGES ── */
+  .msg {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    max-width: 800px;
+  }
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+  .msg.assistant { align-self: flex-start; }
+
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .msg.assistant .avatar { background: var(--aps-teal); color: var(--white); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700; }
+  .msg.user .avatar      { background: var(--aps-gold); color: var(--white); }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    line-height: 1.6;
+    font-size: 14px;
+    max-width: 640px;
+  }
+  .msg.assistant .bubble {
+    background: var(--white);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+  }
+  .msg.user .bubble {
+    background: var(--aps-teal);
+    color: var(--white);
+  }
+
+  .bubble p { margin-bottom: 8px; }
+  .bubble p:last-child { margin-bottom: 0; }
+  .bubble strong { font-weight: 600; }
+  .bubble em { font-style: italic; color: var(--ink-mid); }
+  .msg.user .bubble em { color: rgba(255,255,255,0.8); }
+
+  /* menu buttons inside bubbles */
+  .menu-options {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 12px;
+  }
+  .menu-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--aps-teal);
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    line-height: 1.4;
+  }
+  .menu-btn:hover {
+    background: var(--aps-gold-lt);
+    border-color: var(--aps-gold);
+    transform: translateX(2px);
+  }
+  .menu-btn:active { transform: translateX(0); }
+
+  /* step badge in bubble */
+  .step-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: white;
+  }
+
+  /* tip blocks */
+  .tip-block {
+    background: var(--aps-gold-lt);
+    border-left: 3px solid var(--aps-gold);
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--ink-mid);
+  }
+
+  /* caution / redirect block */
+  .caution-block {
+    background: #FFF4ED;
+    border-left: 3px solid #C8501A;
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #5C2A0A;
+  }
+
+  /* typing indicator */
+  .typing-bubble {
+    background: var(--white);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    padding: 12px 18px;
+    border-radius: var(--radius);
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  .typing-dot {
+    width: 7px; height: 7px;
+    background: var(--ink-light);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* ── INPUT AREA ── */
+  .input-area {
+    background: var(--white);
+    border-top: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  textarea {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    min-height: 44px;
+    max-height: 140px;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--aps-teal); }
+  textarea::placeholder { color: var(--ink-light); }
+
+  .send-btn {
+    width: 44px; height: 44px;
+    background: var(--aps-teal);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .send-btn:hover { background: var(--aps-teal-lt); }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn:disabled { background: var(--ink-light); cursor: not-allowed; }
+  .send-btn svg { fill: white; }
+
+  .download-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 6px;
+    color: rgba(255,255,255,0.85);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .download-btn:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.7);
+  }
+  .disclaimer {
+    font-size: 9px;
+    color: var(--ink-light);
+    text-align: center;
+    padding: 4px 0 0;
+    flex-basis: 100%;
+  }
+  .input-wrap { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+</style>
+</head>
+<body>
+
+<div id="app" style="display:flex; flex-direction:column; height:100dvh;">
+
+<header>
+  <div class="header-text">
+    <h1>APS Data Analysis Protocol Coach</h1>
+    <p>Albuquerque Public Schools · SAPR</p>
+  </div>
+  <button class="reset-btn" onclick="resetSession()" title="Start a new session">↺ New Session</button>
+  <a class="download-btn" id="downloadBtn" download="APS-Data-Analysis-Protocol.pdf" title="Download the APS Data Analysis Protocol PDF">⬇ Protocol PDF</a>
+</header>
+
+<div class="step-tracker" id="stepTracker">
+  <div class="step-pill" id="pill-1">Context &amp; Focus</div>
+  <div class="step-pill" id="pill-2">Predictions</div>
+  <div class="step-pill" id="pill-3">Observations</div>
+  <div class="step-pill" id="pill-4">Inferences</div>
+  <div class="step-pill" id="pill-5">Next Steps</div>
+</div>
+
+<div class="chat-container" id="chat"></div>
+
+<div class="input-area">
+  <div class="input-wrap">
+    <div class="input-row">
+      <textarea id="userInput" placeholder="Type your response or question here…" rows="1"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <svg width="18" height="18" viewBox="0 0 20 20"><path d="M2 10L18 2L14 10L18 18L2 10Z"/></svg>
+      </button>
+    </div>
+    <div class="disclaimer">Powered by SAPR (2026)</div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+const SYSTEM_PROMPT = `You are the APS Data Analysis Protocol Coach, built for Albuquerque Public Schools (APS Rising / SAPR). You are a thought partner and instructional coach for ONE educator working through the APS Data Analysis Protocol. You do not analyze data FOR them — you guide THEM through the reasoning and teach the discipline of each step. You operate as a MENU-DRIVEN experience: the user always chooses what to do next from a numbered list. You never force a rigid unbroken sequence — you offer the path and let them pick it.
+
+WHY THIS EXISTS: The hardest part of using data well isn't reading numbers — it's (1) not letting existing bias decide the answer before looking at the data, and (2) not leaving with a vague "that was nice" and no action. Most people skip steps not because they're lazy but because no one taught them how. Teach, don't just enforce.
+
+THE FIVE STEPS (content is fixed; order the user visits them is their choice, with light guardrails):
+1. Context and Focus — lock ONE focus, data source, grade level(s), time period, and (optionally) a student group.
+2. Predictions — BEFORE looking at data, surface assumptions/predictions/wonderings. Makes bias visible.
+3. Observations — facts only, from the actual data.
+4. Inferences and Implications — generate explanations for observations; identify what additional data would confirm/contradict each.
+5. Next Steps — land one concrete action with a weekly measure to track it.
+
+MENU STRUCTURE — this is your core interaction loop. After any step completes, return to a short contextual menu: "What would you like to do next? [options]"
+
+MAIN MENU OPTIONS:
+1️⃣ Start from the top — walk through all 5 steps in order
+2️⃣ Jump to a specific step
+3️⃣ See an example of a strong prediction / observation / inference
+4️⃣ I have a 'because' or explanation I'm not sure belongs in this step — check it for me
+5️⃣ Wrap up — help me turn what I've got into a Next Steps plan
+
+After ANY step is completed, offer a short menu: options to move to the next step, jump elsewhere, or pause.
+If the user picks Step 3, 4, or 5 before completing earlier steps, don't block them — flag it once briefly then follow their call.
+
+HOW YOU COACH WITHIN A STEP:
+- State the step's purpose in one sentence
+- Give its sentence starters
+- Wait for their response; ask follow-up questions, never write their predictions/observations/inferences for them
+- Keep turns short and focused
+
+THE ONE RULE YOU PROTECT — no causal language in Steps 2 & 3:
+Watch for "because," "therefore," "it seems," "however," "due to," "the reason is" in Predictions or Observations.
+If it shows up, flag it warmly: "That 'because' is doing explanation work — save it for Step 4, so your theory doesn't steer what you actually see in the data. Want to restate just the [prediction/observation] itself?"
+In Observations, redirect interpretation to the observable fact. Push bare snapshots ("25%") toward comparative/temporal facts ("dropped from 83% in 22-23 to 46% in 25-26"). Prompt for patterns, trends, relationships, surprises.
+
+STEP 4: "because" is finally welcome. For each explanation, ask what additional data would confirm or contradict it. Push from symptom toward root cause.
+
+STEP 5: must land concrete — a Reason for Action, a Specific Action, and a weekly Measurement. Don't let this stay vague.
+
+TONE: Warm, direct, a coach who knows this protocol cold and never makes anyone feel dumb for slipping. Every assumption is a building block for learning. When closing a turn with a question, use professional language — never casual phrases like "What's on your mind?" Prefer "What would you like to focus on today?" or "What data are you working with?" or a direct, specific question tied to the current step.
+
+FORMATTING RULES — CRITICAL:
+- Use plain text only. No markdown headers (##), no bold (**text**), no bullet dashes with asterisks or hyphens at start of lines for prose.
+- You MAY use emoji sparingly (1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ✓ ✦) for menu items and key highlights.
+- For menu options, list them on separate lines starting with the emoji number.
+- Keep paragraphs short (2-4 sentences max).
+- When you want to signal a step name, write it plainly: "Step 2 — Predictions"
+- Never use markdown formatting. The UI will handle visual rendering.
+
+STEP TRACKING — when you are actively working IN a step (not just mentioning it), start your message with a special tag on its own line:
+[STEP:1] for Context and Focus
+[STEP:2] for Predictions  
+[STEP:3] for Observations
+[STEP:4] for Inferences and Implications
+[STEP:5] for Next Steps
+[STEP:MENU] when showing the main menu or a between-step menu
+Omit the tag for casual in-conversation turns that aren't a step transition.`;
+
+const STEP_COLORS = ['#0F4E67','#1A7FB8','#6B3FA0','#C05621','#1B7A4A'];
+const STEP_LABELS = ['Context & Focus','Predictions','Observations','Inferences','Next Steps'];
+
+let messages = [];
+let isLoading = false;
+let completedSteps = new Set();
+let currentStep = 0;
+let messageCount = 0;
+const MAX_MESSAGES = 30;
+
+const chat = document.getElementById('chat');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+
+// Auto-resize textarea
+userInput.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+});
+
+userInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+function updateStepTracker(stepNum) {
+  if (stepNum >= 1 && stepNum <= 5) {
+    currentStep = stepNum;
+    completedSteps.add(stepNum);
+  }
+  for (let i = 1; i <= 5; i++) {
+    const pill = document.getElementById('pill-' + i);
+    pill.className = 'step-pill';
+    if (i === currentStep) pill.classList.add('active');
+    else if (completedSteps.has(i) && i !== currentStep) pill.classList.add('done');
+  }
+}
+
+function parseStepTag(text) {
+  const match = text.match(/^\[STEP:(\w+)\]/m);
+  if (!match) return { step: null, clean: text };
+  const tag = match[1];
+  const clean = text.replace(/^\[STEP:\w+\]\n?/m, '');
+  const step = parseInt(tag);
+  return { step: isNaN(step) ? tag : step, clean };
+}
+
+function formatBubbleContent(text, isUser) {
+  // Detect menu-style lines (starting with number emoji)
+  const lines = text.split('\n');
+  let html = '';
+  let inMenu = false;
+  let menuHtml = '';
+  let currentParagraph = '';
+
+  const flushParagraph = () => {
+    if (currentParagraph.trim()) {
+      html += '<p>' + currentParagraph.trim() + '</p>';
+      currentParagraph = '';
+    }
+  };
+  const flushMenu = () => {
+    if (inMenu && menuHtml) {
+      html += '<div class="menu-options">' + menuHtml + '</div>';
+      menuHtml = '';
+      inMenu = false;
+    }
+  };
+
+  const MENU_EMOJI = /^([1-5]️⃣|✦|→)/;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) {
+      if (inMenu) flushMenu();
+      flushParagraph();
+      continue;
+    }
+    if (!isUser && MENU_EMOJI.test(line.trim())) {
+      flushParagraph();
+      if (!inMenu) inMenu = true;
+      const btnText = line.trim();
+      menuHtml += `<button class="menu-btn" onclick="clickMenu(this)">${escHtml(btnText)}</button>`;
+    } else {
+      if (inMenu) flushMenu();
+      if (currentParagraph) currentParagraph += ' ';
+      currentParagraph += line.trim();
+    }
+  }
+  flushMenu();
+  flushParagraph();
+  return html || '<p>' + escHtml(text) + '</p>';
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function clickMenu(btn) {
+  const text = btn.innerText;
+  userInput.value = text;
+  sendMessage();
+}
+
+function appendMessage(role, text, stepNum) {
+  const msg = document.createElement('div');
+  msg.className = 'msg ' + role;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = role === 'assistant' ? 'A' : 'Y';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+
+  if (role === 'assistant' && stepNum && stepNum !== 'MENU' && typeof stepNum === 'number') {
+    const badge = document.createElement('div');
+    badge.className = 'step-badge';
+    badge.style.background = STEP_COLORS[stepNum - 1];
+    badge.textContent = 'Step ' + stepNum + ' — ' + STEP_LABELS[stepNum - 1];
+    bubble.appendChild(badge);
+  }
+
+  bubble.innerHTML += formatBubbleContent(text, role === 'user');
+  msg.appendChild(avatar);
+  msg.appendChild(bubble);
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+  return msg;
+}
+
+function showTyping() {
+  const msg = document.createElement('div');
+  msg.className = 'msg assistant';
+  msg.id = 'typing';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = 'A';
+  const bubble = document.createElement('div');
+  bubble.className = 'typing-bubble';
+  bubble.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  msg.appendChild(avatar);
+  msg.appendChild(bubble);
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+async function sendMessage() {
+  const text = userInput.value.trim();
+  if (!text || isLoading) return;
+
+  // Hard session limit
+  if (messageCount >= MAX_MESSAGES) {
+    appendMessage('assistant', 'This session has reached its message limit. Click "↺ New Session" to start a fresh session and continue your work.');
+    userInput.disabled = true;
+    sendBtn.disabled = true;
+    return;
+  }
+
+  userInput.value = '';
+  userInput.style.height = 'auto';
+
+  appendMessage('user', text);
+  messages.push({ role: 'user', content: text });
+  messageCount++;
+
+  isLoading = true;
+  sendBtn.disabled = true;
+  showTyping();
+
+  try {
+    const MAX_HISTORY = 20;
+    const trimmedMessages = messages.slice(-MAX_HISTORY);
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
+        system: [
+          {
+            type: 'text',
+            text: SYSTEM_PROMPT,
+            cache_control: { type: 'ephemeral' }
+          }
+        ],
+        messages: trimmedMessages
+      })
+    });
+
+    const data = await resp.json();
+    const reply = data.content?.[0]?.text || 'Sorry, I had trouble responding. Please try again.';
+
+    const { step, clean } = parseStepTag(reply);
+    if (step && typeof step === 'number') updateStepTracker(step);
+
+    removeTyping();
+    appendMessage('assistant', clean, step);
+    messages.push({ role: 'assistant', content: reply });
+
+    // Warn user when approaching limit
+    if (messageCount === MAX_MESSAGES - 5) {
+      appendMessage('assistant', 'Heads up — this session has 5 exchanges remaining. Wrap up your Next Steps or click "↺ New Session" to continue in a fresh session.');
+    }
+
+  } catch (err) {
+    removeTyping();
+    appendMessage('assistant', 'Something went wrong connecting to the coaching engine. Please check your connection and try again.');
+    console.error(err);
+  } finally {
+    isLoading = false;
+    sendBtn.disabled = false;
+    userInput.focus();
+  }
+}
+
+// Kick off the conversation
+async function initCoach() {
+  isLoading = true;
+  sendBtn.disabled = true;
+  showTyping();
+
+  const openingPrompt = "Please greet the user with exactly this message: 'Welcome to the APS Data Analysis Protocol Coach. This tool is designed to take you through the five-step Data Analysis process and answer any questions you might have along the way. Where would you like to begin?' Then display the main menu options.";
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
+        system: [
+          {
+            type: 'text',
+            text: SYSTEM_PROMPT,
+            cache_control: { type: 'ephemeral' }
+          }
+        ],
+        messages: [{ role: 'user', content: openingPrompt }]
+      })
+    });
+
+    const data = await resp.json();
+    const reply = data.content?.[0]?.text || "Hi! I'm your APS Data Analysis Protocol Coach. Let's get started.";
+
+    const { step, clean } = parseStepTag(reply);
+    removeTyping();
+    appendMessage('assistant', clean, step);
+    messages.push({ role: 'user', content: openingPrompt });
+    messages.push({ role: 'assistant', content: reply });
+
+  } catch (err) {
+    removeTyping();
+    appendMessage('assistant', "Welcome to the APS Data Analysis Protocol Coach. This tool is designed to take you through the five-step Data Analysis process and answer any questions you might have along the way. Where would you like to begin?\n\n1️⃣ Start from the top — walk through all 5 steps in order\n2️⃣ Jump to a specific step\n3️⃣ See an example of a strong prediction / observation / inference\n4️⃣ I have a 'because' or explanation I'm not sure belongs in this step — check it for me\n5️⃣ Wrap up — help me turn what I've got into a Next Steps plan");
+  } finally {
+    isLoading = false;
+    sendBtn.disabled = false;
+  }
+}
+
+function resetSession() {
+  if (isLoading) return;
+  messages = [];
+  completedSteps = new Set();
+  currentStep = 0;
+  messageCount = 0;
+  userInput.disabled = false;
+  sendBtn.disabled = false;
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById('pill-' + i).className = 'step-pill';
+  }
+  document.getElementById('chat').innerHTML = '';
+  initCoach();
+}
+
+// Automatically start the coach on load
+window.addEventListener('DOMContentLoaded', () => {
+  initCoach();
+
+  // Wire up PDF download button
+  const PDF_B64 = 'JVBERi0xLjQKJZOMi54gUmVwb3J0TGFiIEdlbmVyYXRlZCBQREYgZG9jdW1lbnQgKG9wZW5zb3VyY2UpCjEgMCBvYmoKPDwKL0YxIDIgMCBSIC9GMiAzIDAgUiAvRjMgNCAwIFIgL0Y0IDUgMCBSCj4+CmVuZG9iagoyIDAgb2JqCjw8Ci9CYXNlRm9udCAvSGVsdmV0aWNhIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nIC9OYW1lIC9GMSAvU3VidHlwZSAvVHlwZTEgL1R5cGUgL0ZvbnQKPj4KZW5kb2JqCjMgMCBvYmoKPDwKL0Jhc2VGb250IC9IZWx2ZXRpY2EtQm9sZCAvRW5jb2RpbmcgL1dpbkFuc2lFbmNvZGluZyAvTmFtZSAvRjIgL1N1YnR5cGUgL1R5cGUxIC9UeXBlIC9Gb250Cj4+CmVuZG9iago0IDAgb2JqCjw8Ci9CYXNlRm9udCAvSGVsdmV0aWNhLUJvbGRPYmxpcXVlIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nIC9OYW1lIC9GMyAvU3VidHlwZSAvVHlwZTEgL1R5cGUgL0ZvbnQKPj4KZW5kb2JqCjUgMCBvYmoKPDwKL0Jhc2VGb250IC9IZWx2ZXRpY2EtT2JsaXF1ZSAvRW5jb2RpbmcgL1dpbkFuc2lFbmNvZGluZyAvTmFtZSAvRjQgL1N1YnR5cGUgL1R5cGUxIC9UeXBlIC9Gb250Cj4+CmVuZG9iago2IDAgb2JqCjw8Ci9Db250ZW50cyAxNCAwIFIgL01lZGlhQm94IFsgMCAwIDYxMiA3OTIgXSAvUGFyZW50IDEzIDAgUiAvUmVzb3VyY2VzIDw8Ci9Gb250IDEgMCBSIC9Qcm9jU2V0IFsgL1BERiAvVGV4dCAvSW1hZ2VCIC9JbWFnZUMgL0ltYWdlSSBdCj4+IC9Sb3RhdGUgMCAvVHJhbnMgPDwKCj4+IAogIC9UeXBlIC9QYWdlCj4+CmVuZG9iago3IDAgb2JqCjw8Ci9Db250ZW50cyAxNSAwIFIgL01lZGlhQm94IFsgMCAwIDYxMiA3OTIgXSAvUGFyZW50IDEzIDAgUiAvUmVzb3VyY2VzIDw8Ci9Gb250IDEgMCBSIC9Qcm9jU2V0IFsgL1BERiAvVGV4dCAvSW1hZ2VCIC9JbWFnZUMgL0ltYWdlSSBdCj4+IC9Sb3RhdGUgMCAvVHJhbnMgPDwKCj4+IAogIC9UeXBlIC9QYWdlCj4+CmVuZG9iago4IDAgb2JqCjw8Ci9Db250ZW50cyAxNiAwIFIgL01lZGlhQm94IFsgMCAwIDYxMiA3OTIgXSAvUGFyZW50IDEzIDAgUiAvUmVzb3VyY2VzIDw8Ci9Gb250IDEgMCBSIC9Qcm9jU2V0IFsgL1BERiAvVGV4dCAvSW1hZ2VCIC9JbWFnZUMgL0ltYWdlSSBdCj4+IC9Sb3RhdGUgMCAvVHJhbnMgPDwKCj4+IAogIC9UeXBlIC9QYWdlCj4+CmVuZG9iago5IDAgb2JqCjw8Ci9Db250ZW50cyAxNyAwIFIgL01lZGlhQm94IFsgMCAwIDYxMiA3OTIgXSAvUGFyZW50IDEzIDAgUiAvUmVzb3VyY2VzIDw8Ci9Gb250IDEgMCBSIC9Qcm9jU2V0IFsgL1BERiAvVGV4dCAvSW1hZ2VCIC9JbWFnZUMgL0ltYWdlSSBdCj4+IC9Sb3RhdGUgMCAvVHJhbnMgPDwKCj4+IAogIC9UeXBlIC9QYWdlCj4+CmVuZG9iagoxMCAwIG9iago8PAovQ29udGVudHMgMTggMCBSIC9NZWRpYUJveCBbIDAgMCA2MTIgNzkyIF0gL1BhcmVudCAxMyAwIFIgL1Jlc291cmNlcyA8PAovRm9udCAxIDAgUiAvUHJvY1NldCBbIC9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUkgXQo+PiAvUm90YXRlIDAgL1RyYW5zIDw8Cgo+PiAKICAvVHlwZSAvUGFnZQo+PgplbmRvYmoKMTEgMCBvYmoKPDwKL1BhZ2VNb2RlIC9Vc2VOb25lIC9QYWdlcyAxMyAwIFIgL1R5cGUgL0NhdGFsb2cKPj4KZW5kb2JqCjEyIDAgb2JqCjw8Ci9BdXRob3IgKEFsYnVxdWVycXVlIFB1YmxpYyBTY2hvb2xzIFwyNjcgU0FQUikgL0NyZWF0aW9uRGF0ZSAoRDoyMDI2MDgxNzAzMTA0NCswMCcwMCcpIC9DcmVhdG9yIChcKHVuc3BlY2lmaWVkXCkpIC9LZXl3b3JkcyAoKSAvTW9kRGF0ZSAoRDoyMDI2MDgxNzAzMTA0NCswMCcwMCcpIC9Qcm9kdWNlciAoUmVwb3J0TGFiIFBERiBMaWJyYXJ5IC0gXChvcGVuc291cmNlXCkpIAogIC9TdWJqZWN0IChcKHVuc3BlY2lmaWVkXCkpIC9UaXRsZSAoVGhlIEFQUyBEYXRhIEFuYWx5c2lzIFByb3RvY29sKSAvVHJhcHBlZCAvRmFsc2UKPj4KZW5kb2JqCjEzIDAgb2JqCjw8Ci9Db3VudCA1IC9LaWRzIFsgNiAwIFIgNyAwIFIgOCAwIFIgOSAwIFIgMTAgMCBSIF0gL1R5cGUgL1BhZ2VzCj4+CmVuZG9iagoxNCAwIG9iago8PAovRmlsdGVyIFsgL0FTQ0lJODVEZWNvZGUgL0ZsYXRlRGVjb2RlIF0gL0xlbmd0aCAyMTI5Cj4+CnN0cmVhbQpHYXRtO2dOKSU8JnEvQTVvTGxLczkxIVMmXFNvZDRmcWRWYkQpJTtKUSFUMjFQRillc1Ivb11rXk9BcmghKlY7JjBNM1QqTSc0UyVrVy5JSXFGai48cldEbmNmMGl1TGwpV0Q6IlgxIlcnWj08T2xfIUNRcCFrLWNfKSpzKS4/MFxOJyU6anBNW2YsczZiVjJROVNXLzFuaysrLSVBZkZzO25RO24+I0Y4YT81MDQrLE9vN05dbFktR0RPPT5pWTFZY0RLNHBkIz1IXU4rOUk7UG9cUSYxczlPOUwjcFZmT1xNYk5YJy5GWjdbcm9AJixZOmxsY3FMWTNyYUNpZ3BRSExzLzA2LjBjQFIiJU0rZGpAWmozLFdhXWMxMmNlK1ZtZ21mOjJRKSlML1koKjRWNy8xRitbXCx1SWRYVSxLYUxGSz9AZkVjJTxDa1UqUkBVMWImSEAmPEJXYT0pUjdUQnQiZ0RANnIwPEpVMGlpUXFsMkssWWwjJSUqOHJ1WVNlWG9OUSFeQSFpQyJuJE0hLFZTdVdcPGdjOCchS0FcYGdOST9GbGBpWUNqJj0sPTRMcFhAcGpwIl1jQiJyY0tSNT9nVT1EMChUJikrcC4iXkdLYCdjYWxuM11YRS0sX2w6JS1jQDEzbjArbkBSIWQ6R1haIjFsQjxuNCs/MWVGN3NtLk1TRyo0SWhgNChjM2s5T3FBQS11a3A3Um0hTmZsXFxVPk4vUl4iL3QkYXRCNTBfMic6JUZcXT5oITtbImVJWFtRN1BcKSQia2Q0IVwoQEc8aFxFMkROQGY5QzRmXUpzJWUoMWRwLXA6dSRMWC9DQ0RgTidkKkIhYzgqcz5wajxZND47ZXAoPDVdK0U3Um1RI3VAU2k9W2xPbCF0LTBhOjc8bzpmVVNpYi4zTWBUSVxDQEdXN1g2U1NURjJTKkpBRlUpbCxMY18/JSw2VGcsT2oiPTo1Y18sYk5LYmM8IV06SldIcGtYR3AhdGc9XWpJWzhmLHQ0S0E/XmUvVyxpR1E7LVtGU2UkdWdlSD1AJ2xpPUVlY0Q3ZUhSaVtqXUBXVjhGIUBhJmRBJTlyYmtiaGFwRGhrPlBdXiQtIWNFdFFQWls2KFticU51LkNlL0wrWzxsSyosWiRTIVMlQklRWVlERiQscUgzW2NSI1dFcDciclsnZlM1O1QvTGVwSC9IInAhZzJBSlpiNDdCVE1YMkxGaz5yZloocztGY2xfWklONj5aK2ghKz0qNzxXUUM+RV5cOEIhcjVdZmNBLFU1Lz8nYVtPNVEyOzFFNmFaSFEyV3IxUlZxXF1HX083cW0uS1s5PGs3YUQuamhZKjFhSU8uLFo8Mjs2VXM8WSRYQFwjP1ZGM2dbWkVESFA8dV5LUkgsbS0pRlBxbD1AaXJqVFBqVFJoaF5vT0dHRDshWV1uZlRDdWFELzNsZCZYIytkQ0JZVzxGOGllQGEvSFI4W2E+Qy9qNytHaV9fVzhQVDsybnFuIm4rVyUlaXJYUCVdcG9mLktxMC5iQnNSPEtDTXFNMUtKS3E3Q21FIkBkaG9ncEk+Q2YuW1JDXnNKSjFnPyZKTVUyPEcwTk9pMyZFcFsxMCYuQSpMKyIsNHE/TFlYKj8mPT0xWmU2S3RybD0uXFA9ZVpnTDpORVZAIVhIPDVETStWX2BuPW5gcVAnPSVNRUgrclI2alVFXTQqNltgQkorOUFHLFo0Ij9nXVRpc0JCY1ZiaEpCX0pydDRTaGpja0JmKnNnajBGTGJnQENoNE4kKyM3TV9xKWppQT9wOmddQk5yVE09J081KSFIWypuY1NxST86YXE5ZzM4VGMtP1VXV0RNV3E9M2E/VWo8IVI7ZmtkLUFzbnVITTBmJmVkOy91XWQ0MmMsRkhiKWAyIj42LToqPGZqKHVtVDRFJWdrIy4lU0E+QStTTnQ5bStAbGI6bkVQKEc3KEYoZEslYFY0Kj9yLCcwW0heNmZKRlJuUy5bOWxUIihvQkA/cj8jZF9BR0QiOkFvZSlMKU09Y2ZMJypHJUppMEkvalFrbS89MUNXYGgmM1VOZitVZmFLcVJUKkFlIVFQXWwjTzZtVXVfbWk1LGZwKTxIKl05VSw3MFswKUdZZTtQTUhpUnVfNGtYR2A8VGlHOmhOMXQmdCtja0UraE5pcj9iLkhgVlVCSDlQJFVyV2xAb1J0LHUtWDpkbCxsTVRCRihGWGlIJ1pIKyImSmcpOnBhKDY0TGBvOl8oITpXVFJHdUcmKCFyWVNedWhSaycvRjtjdTJfcyVlSmBKNiI4JVdKUXVUJGs/U0hGImlKR0BcZ1QmQkJ0JCU5aUUxYFFEZ3FacDtXTGlbTk8xITNfIih1LFxWMjthPl43ST4mVShVSCZzZVpvSCZpLGpcLWhEVlVVZTxrbWJQUmQiSnRRTz1fak5sKEhFbnFLJiRaOyxQRWFlbVVVblg3Oks3PiZpayFyIzV0QGFZOG91NzlSaCJ1YEQwXENCOyg/LE5XI0xvIzE3bmA1ZGQqZT8iUWZ1KmFuZ1NfKkJaSlQ3Q1Y4Oi1SXmhoMTg1P1wpYiheSkZFXy1fV0FtTCU2REpnaik3PmQwcy9hSytmW25SRWZPR2NfIlJYL2A+IzBrIl5fTjszLDNmZiNlaCtNcCVaX1ZLLnNrLWVhJUklQUZzWlNzImpZWVYpdG9rUUhmQEZQSjlyJkxrbF5IZVgyUz09WjosSm5MNDk5KUQjKFYxW2FXTEdba11tSzRMRW9kTEUmZUVCT29uXypjN3JlJDM+V1E4dGUzIWpxPyZFYCVuJ1s5O0VvUCRoXkc6cHRLPUojWFksNml+PmVuZHN0cmVhbQplbmRvYmoKMTUgMCBvYmoKPDwKL0ZpbHRlciBbIC9BU0NJSTg1RGVjb2RlIC9GbGF0ZURlY29kZSBdIC9MZW5ndGggMTQ5MQo+PgpzdHJlYW0KR2F0bTo/I1NJVyY6RGctPTlSaiglOG9YUFtkTk8/Q1BpL3NSTmFyZiVlJ2lQZDVEWXA8KFgnZ24oNkhZT3JRPlNpOGZ0Ok9VLF11U1huVC1BTyZHLkpcKVtUZEpHNHE+UXRtcVpzNk5ASFNJKjpkdGQmLHBRSyFoUzdjLyFCcE8mUV1SXXI+M1N0KjYvXiNZPlJNUk9qUSJXbzwscXVNT05ZYyNaPENMbT9HWW9BaCpAREhtNjgrO0dAQF40TG1SR0xPL0pFJTRxc2hAPTBtakNmIWNSIXQlM05GNyszZjYyTSN0LWhPOFtKQT8lJUwtVElrUlIsQy9qN2JPUFlCKFxnOl4jMzxiVl9OLUpDayRhQEkpPGhTc25mN3VAbU4jPnNlLCZGTEdKckc4YUlWZTAkUC9XQmYiQy9TUUdLMGZMbUJvc1tjU0JtK1UqRkRoPlF1I0IlSlZRLiY5aVtjS1JzbTtBPzYwZExhKmdqVUtJaGdNLXIlWz8rXDtjMERGYz5GbyFsP2grJF1ZJFdQUWReYCNGaF5Ac2AkJF1jPSJ1WiU5LkdCOy1dPE5eLzpbcEJhNGM9ciM2IWZZKz1MZUV0PkBHViotc0NmOyU1ZWtOR1JyUUs0KyhKJm88ZVhuNTZTXzdFXlQ1WztvcjMkZl4xaUg0U202PzROOWxxOy5IR1lKV18rVmpqW3Q7MXUxY0g9N0w9S2NjTDlURDdxWjZdIjJuIlNXRGpVKHQpYW4mbWo+QWxJI0pMaEQsT1RfbnJxSmIiXixsSFZRWlE7NShPQ19pVC51YTRxTnQ/S0YtJCwyaCIzcGVRVnFeXWBPSUtkZiZ1Wks2RyoyQys+SSRoLDtbRlAoR3EiRFV0OztqXlpjaE1LQ0thPUM5Ryk/TjJNcSZOSipCby45LCtPQGY3MSVIRi4sJyJNIk8iQEdjM1UyW2k8WVY5OlozOy1JYDJbVFlXaHUlYVcyY21FNW5qZmxdUyxPQVRSZCQnWFArUVFuPXNVPzxZWTBwRGpWNz1FZGEkZz4wVzYtZFFTRmYmPC9ELypSM1ZkOVJRUVgkbyhPJUEoak9EVU5GXSY1JzVuXGhlOk90MD5hLGZpPnVWS0FSVVtgKFxSUjkoXXJiTypvT0N0MlNhdThwXUpnX2lPbjEoLWtMXUU/LyRrKmtnNiFpaj1NdDIsIklgal85M1w1czVHS0lZLV90NDFrT2xVYikzMk5FMl1oY1Y8b0NCSGBbb2dNPFElWjtyKSc/VT9UQ2JBUGgwaTw8MEZNUz8+amxXQmdsXWZmUlpXciIoP0hHIjtAVjpNa0MtWExtY2wsQjpgLD5vQjoySWNbV1c6UUcyW2RvWjksTHQ0QVBxcTgjM15KaEghcVJIIT07V2IxQ3FjWjtXKWVGdUw3M3UtUkhXXz03Jl1NV0BJUUNUMUZlby86JG1hVk9ta1lPJGUmT2lpJiJJMCJdanNUc29uJlNfKDFFMFFGVVBRL05YVEBLTyQxbC1xTWdlRTVlPCRPU0AlNFxgKmU3PkU+ZUw5InNJcG9JPzRVTk5HVXIwPDNAQkVrWGojQWJBNDZGSzBfUi06VCVtRF5jbkskRT42KSdGdGVDWXBcZCtHIVBTYyIrNiU0MFVfT2VeMC1HP3VAZWkhNT5RZSlDYGVpUyQ5XDxDTU1LNk5BTFc0X3JAY1s1VD8xVSs0T1IqXyNDb3QhPU5XSj1WIkw1aHAoaS1zR0pJIzhQTCVbbHVTNCRaI2ZIKDdKUzxsNWRERnBwTDBVUCpQS0hqTG9NaV8naFdgPkZKYTExZitmQXVZUzZZcU1FJkVOKF43ZCtiPUM7RHNrb181IUw7XFRVPVx0Il48ZjMuZihDMmIwIzwoQ2dJZz9xbk1pPlRUJUw4OXRqMVU8T1RsX3EtcCNbKCtJa1c5ZlRTS2QjOGRAUlMkKjw6NnIuSDxYNDg8ailJTlh1cTpkPExKRFBRKFcpbFh1In4+ZW5kc3RyZWFtCmVuZG9iagoxNiAwIG9iago8PAovRmlsdGVyIFsgL0FTQ0lJODVEZWNvZGUgL0ZsYXRlRGVjb2RlIF0gL0xlbmd0aCAyMjY3Cj4+CnN0cmVhbQpHYiFTbGdNWWI4JjpPOlMkay9xTiFmLG9EUCRhKlI5ajddJ2RQXy9hIWUrOUwucXJMVlg2X0orVyplRjxdK2NSQThKRDghJGUsQyEtK1RBUVNNTiZxLilwYnJKI2U9Zl0uJSVhUXImc29GP3JKPmpZWnBpPztKbyhULWFIW2QzTT5gUzxWRDwkaDQpSTlKMD08OjxbSEU3VFBQTD4tNitTLlBTUTA0PEknPjdRJzlyJm5QWDdFRioxI1E6PlJocD5eYiltRjA5VG90cXNsQEsoRlUzcG5yRVRZXyVAbEAnQlRqNmNLK1wjPTZwbjJmRSRuQHU1cFdNMS4rblVmSyRCPG4nbU91cGdNOEshUjw5KFBuYjlJTUM+Jkw4TCpLTSZLY19ALSlOLDlwcG1pW2plWF8+Q0ElQFcvbU5PbGMoRydQck1sYV5GbiZWQD81RGUkIjNvLjdzR1hzKTQzRm5eYmY+azFsaXVMdS1AVzIjImo5aC0tUTkxanFrMXJUM19TaztLQC1TQCNjT3JOa19yNTYhUz5eXD5MWG1FJjdkXUdLVmRgUSlvJkktXVo8MChDbHAuJV1LayFsSDlQTUdeU0g6NXVvRiRKJ2wpMF1DdWI9NmE4KztPL2w3aVBfOm9bJnVoRDhbbko3LyFzLjRXYERrU0Q1Y3Q8cHV1JEM2L2w0TFJOMyppJTc0bWBCOzdQNzpqI0w8PyZHSnNmV0cnJDs3VEhPPk89KGcnLmU5WktyUzlraiRgNFNCa2slYyQwb2M5IWxxMkdrQkYnczlBM1RSJmtAKnU5Z21uKXApTzQyMVhdVG1xdUFuNmkvPmU7YCFVODBTYjNMYitNTGdlT0BEUTw5KjRYWChRNFdmQzZaJTpyUm1nXjhqYjhqQTBZOmEsJWVFLW9ZLHNaYXNlbVNdb15Wc1xnMlxXJUJXJTNAJHVgb1htPixebVBeJl9nWlNSX1s7XG0wRyMnSjklczwuMytHXUJHZSNpTkFIamszR2o1QiE4XC41XEBGSGRuKVBMNTI4J3VtNEZYYkdCMiglcF1CXFRAQkVePkI5RzhJYnJvaihgKkZtKDYwXWhPTSMxQ1NORmJlJlRSYigqIVFxWV5NdVwhMlwrZGY8aFduSidUOCdWKywsanFMSmZwYD1jPSxhXFBDLT0vcXVSQWdwcFZRU2VaMDYuNjRPVVkkYVdMYUB0IW5NREIpWk1DREtqOi1DLSlNYVE+KjgjOVFOMWRqXVFVWjJiVls2UHAmPipRdTFhc2xySnEuJnRyJFVMUVhkZ045XC8uIW5LKVI2WmVaZThmZ0lBdD81QyRzLiI3NysnPD9tUHFQJUBHTlNvJVJuMlZEO2JBJF8oTGAiI0hnSlU3a1JZZUUjTy4xJzVjIk9WZ3BAWEBBRyRWMGlkIl90a0lnN3BVcktzIzRpVFw6XltGTFBNY1FVITMvQC1lR1ROUylUT2RScipWNzk8aDxkNVguL09QQzZJYFhLWixuOUc/MmFuV2RlXVtfdV0rRk90OUk8PlBSNVlhOF5gPHJSRVUmNSg3TmcjWjI4aS1YTmJTYFc9USFcNDRaTU00OGpsP1I6LzkjLGhQSkU6IUdiIW5dUG9nISswanA7bkw3R1AwXjdoTidlWFxqREFpPXJSOipFQGYkM25TKCxYIl0zcVMrOTwxYyZodWwhN3JYL2ZSOlBsPFl1OT9aPXJXOD5rbD0kbkJZLTVSIVFvZmw/L14/KyIsazUrYkRxLHFtVS8qMUljTzdlXGphWXNCPWVZcjJcSGM8J2puOyY+Y0ZkNUZea1hEUnIuQVJEbl1uQkdGR3BUa0haXixHZ29jL2V1dTZbW0hfcG8mR3A4XD1fYW8vPypfNzAiJDUzdFc5RCg4aXNwJ00kZTZSbGxnTTVPWlNDKyUzSDxqWWJrNS0obCRDXmVLcF4qMUFJUC40VURnKSxRc3VcTWMvNC8iXSUsQydmWkxsPXFPSU8uXWAwJi5YKTdjR2J1WzVLIV42aTlPc0daN0ExOj4oS1BdSyZMZShzJj0rRk9FXj9DaipAdTxHXXE9Ij1dcT9FNSFLOGpWQj1rY1s0OF02KFh1QzA5QG0tL1Q7Q15wVC1lclpqY0hHY2UxSDZnWSxVWiNWZE8pYTxSP2JBM2lpbipnOyNaXCdTPDhtUW9IPVQpZS5hYnBPMW85QnRBLm0ndVpKMnBFMWIzWk5pWGhSNzdQLDdIVWl0LmU6WEFdNVEkJG9SR1ZlTlZZJ0VaO0ZkPkAiI2FgczVXZigmKCxMKj02aTZJKW8rZD8tZ1Q/aG9NYVJMPitWcyZxZm5tRFBjYVRRaC9AWCZRMiROQURjLipdO3NvKlw0c0RfUkhlXWNnR19DP18kOldCblAjZl9OOEFQO0k2Q0hzQz0hMjRbLk1uLHU1OShRYCM1UFg6X2dbPWpaKDoqRjFjT0NwNGwzQ1VuNzpGXD5mMl4nWXNbWzoqNitIV0g5dVknMVVvX0lMTWcsaERYQTA8K1UuM0BrRGIzIWRJZnJJZ2kqPCgkcCdwOC1dT25TLDBkaT40MT0kNUk1Wm5yNjc5MUFSKG9rJjhQYFxFSW4mSkkyLUB0ITt1VGo2WWI6VTBNcy1TMVErWiM/a1xbZTZVMTNcIy0pYEksTyZzaCYpNHQkPD0hJlpZI01tcE9oamJrQSZzPkMrbERjM1BDLFVobVZzRzVAU2BnJCEtXWZUJFhjYEJvJ0dFNkMvamMjPWdvQFxjY3R0ZW1ZJTdkOlgvUSdYZTpVIzVHJUtiMD1jVDkoZjpOc0w7OlYlKyoyRUQtb3JgQylqVEp1OTZBdDktQlRBYSE0P2ZVZTtuXkBON1ZoMkEpdWQ+UCw/VlQ1NlFJXVJFWGcxQlU6VHI9VDc+b2QwLTU8NlhMWVFaZjYkdXMjOS1VX19iXnJzUykpW2YlNVciX0o1K0RvZHI2Q2wsS2ImSV1EPGVPQXRBN0kkOzRNSy0mWyohSVhAbFAqZ1BLS0peNDYhMmVkYCh+PmVuZHN0cmVhbQplbmRvYmoKMTcgMCBvYmoKPDwKL0ZpbHRlciBbIC9BU0NJSTg1RGVjb2RlIC9GbGF0ZURlY29kZSBdIC9MZW5ndGggMjUwNwo+PgpzdHJlYW0KR2F1SE1nTiklLiZxMExVb1pLb1dXQVJEM2ksLkFXNC5ESjRWS09fMTxNZC5IMCtcOlk4MTdBJztZR0BNSUxlJyxBNGAjZU4oLmcrSmo5PWxJSlMmXFJxQ2FBTFJJJnFQMzx1dF0pMFIpIloyZV9pdVksZzBEKUk8YzBtVThYXDpLJ1RLJWtDJ0g4YitfYU1kTThaZT9vUCVwRG9QU1woVztjODsxOUImKSxAWjFaUiZiRWwsQSdDXFpGK0ctXFlvPzJ0R0kqdUdDNS5rO0AiI0w7OERSXGtqT2YkRV9CIjYlaF8iVHEmTk4kITRTSEFqay1vOE5iJVguS2hHXF5rSy5OcElIQCprc2RQTiktLVJmUURHc1VVIS8+ZF8nUEMwLVk7PTUzcD4xMmQ5TkdqP2BvKyFrPj9sLy9RTFQvNCRMNlxoRjUsQF1dOyFbNGUqczV1ckNjPVRPUzQ0JGs+WEBpIStAdF9SbnJLKy82cHBVLGBhPEhANHMhNFVcbEBlJlEtSj5OMUgwY2RWPmw6QmhwKFdJW1BXZ1NqJFZgI0U7cktMRlBjXWcpI2s2PnIvPEZ0UC9qOXMsQTZHYSNhVGUhW1IxLllsL0JqUzFxRW9OKDk0JnRnW1MxRGt1ZWApWG0wWSQyM09FLj1MWTpbUyVEaV4udCNLb2c1PGdqTVhNIzFRU1ZkZjE8NkpIWmdPMFw2S1EoI1RQOVtwUWExR2hQZV1LYydDUklvbC4nTytWZVlvbDtwYnElVjQ7IUQlVVc4NUM5KmQ7OjZZTVdGIStJPVheNkVILSNYPUFmNkUhdUxZITppWWVOUSVvNTlXNjBXYWFpOStxKW8wYlNXMEVqWk5rJFlyYitZQ1Q2RC5GOG09QkgsXDAzJS9mSS1zLU0+QWNUPDZDPkUnJkJMNF9BVUc4J2BxIyFCQUJmJiM8VTNMRDFRN1leV09uKWBIZFItIXM3Sy0kNG1bUlZWZDQkZElYPSRkVEFjW2gzJGEiT203alJvcCpkTj90NCgsaGxhOmZLX0kmYTc/TUxNaz5fXkVKbjgoajxDS2pYVGREaUdcbUIhXEtjV2I1Plc4S2NzMThsTjMiVSliQkY2RjhuKDI8V25XOEwqT0s5Mms0Mjl1aztpTyVwTipaYTVXL05eQDcjKFQzYk44ckxSK0thR2VWVWA8dGokVVJTKyFpP0RFQkhmOSlOKT0zRzY1RCk/WTdYcUNfP1wqUmxvQmBZLUw9Xj9aOjpfLkleQSJQVF9fcERoZ2syODp1VGZxOl5gKUszIidTbktwOjc9ZSNBamlJcEdoRDYtLWkwZmlXZ3E1TFImQnE3I0w+OVU7M2hCVy9mXWxOXztiWiY3QjZUJE4hQmAwXVg9SydlNzdcXjJRZDU6YmU6JDxOSF5zJGNBIjc+XlhvZU9jbFFkVlokJENPNSxQV2AoMyxOaGVXLnJeSVFEbGImJWxKPkNkTE1PMkEtYUZLaGxePHBGNz5JXT5TVSNtWWtnYiloTT5mZzZxPDhPdDpcNSwzbjxMPjo4YjxEJHFHXjxzTyhdblQtJ2RAUUZDMDM9ZyRGNlpaV0EtXzcjPXR0TlVzQmUsKCcubTJHbiY+ZWFHaCg8NkJtZWApR01wQ2gkNz8lW1chWmFaU2wxRVQkNFU0WTZ0QVxpM29WVzZ1aEtZaSg1XENbSVUraDsyaCs6czV0PVM4VjJiMmpKPiEvLFEyPSxOck9KXidvKzY0RTFTWVUqWSsoZj5CdC5DbmN0JF5QQWlra0YpNTVKSHByRl9gRyxEdHIqJUU4V1cpKGBLTDxiS2coNTxTSy9WR2oyIiQ6JF5fS2RTYF9hU3NlUl5sN1lwJSIkXlRZQEYyLyJwJlwiUD06Yl09aW40WzRCPGpSLWRQayZOKEMia0BuSGtxSTRbVihOUT9LPGNxK1InI1RPTTZQTGdZRjUrcyJqTSE5NksqMyU5YnFuUjYrU0F0I2dwY2o2KDA0dHFrMV9JalBHVERKakhuI0laW0YzR1Q8REIqPlkpQU9CYiZEK24sVF49PiFBVFpyVUwka1pCRF9JP3E6QFY/X2ZtU1dLIitGNy8iaTJVTVxtSCJiZ0ByJD45LSU6XGZfcmRSKHNKTyYjUi9sbjtrPFxXJFtXKSQwI2RYTy47RFxkSlYmKnVjcUctYTx0QiteIVYvO0E9KyNeIWhcJiRbPylKaEBsLUFdJ1ckclQnRmpkciIxbVZYO2pBOm1OOk1PZD8yJTY4WjxVXnA2NFBKbzhJaS9cMTJpJFFNS1FPSiI4Nyl0WyNEQGlMPzVwalEjdVkuPzppXUZpcXNeVWlKQkVoK11JWHFZWERdM2FTVEw/LTg0b1pkMWQ5bTtvPDNcP0I8M2ZOWj9MWyElWWxLT2YwQXFFKi5ycjBoUmZZbVMnPTBzXyFxSmFSY0pHdTEoJ2o9YlRSSz9lOChEXUtGblMhJDtgRmtuMSInTzc7R0pbW3FxOnMtSWw/W3NIQ1FScj9HUEQ1L11jVlo4bz5OLnU5KTVvOC1kYWQ3WV1XZjxwU2JfNWk1bz9APERJK1Jac0lCUk4iQlU7XGJaXmFvTT9eR1h0IVtcJ0FgKyxeYmAlZkBVckcvOzQiaigyUlQqJGs/bzN1VjpiRkkwVlpydCZPIjAzaCRuR1hSQDhuJFRRRT5pZEVPcVROUzE2VkY6IXQ2V0owKilcbipAbVVETixscUdrUDxIUmMnc1R1cVIrP3BaRCc/LlpZV0widD5UKjAmYXA0JTdtc2csYkBNUC9eUFcsdUNxPmNYa1FgZ1BWWmthTWtgcTJMTzBBOFtbLkpfV1BaPjlQcmVycyQsSWtTXDxnUFcxVSY4QSwsVHUvVigiamg5LXRsKjQ3aSROKmtNK2BGW3EramRnZm1fMmQ9RjJBV1Vebj4tWTg9JjxQXWs+ckNka1NzPDZpZSFBRS1mSDMrPSY8TkduPmhGPy4uVCNDL2onRyI4dG1LRVlGcy9uaSleWV1SKGw6ITxaRj0xR2BXQDlJS2FrOyFQYllVS101V3RNYltvTDYrSHJAQVRsSjhObDhFOUxxN0csUl1cbzo/Rj5Ub0RWZVxZTG1wOXFsMkZINipQJ2pKWldtL2xETywtT2RKO0c6MiFzSmNmWmhCPi9MUGFgU0Y4OylSLVdMJEZEQHNrW0EvXy9oPFVJZTw7MWRSWS1zaEtvPCw5PDpDZClyWEYiMFxzK0w/SW4qcFY+MUVWKz1RXDhSW288SCZpTC9JXCMlQVU3OlZRb2RqcW09JSRPOF5STDZpNjlUNmw+PHFbXCkzI1hnLDNRcWtdKlshVCFZcSZPKExZfj5lbmRzdHJlYW0KZW5kb2JqCjE4IDAgb2JqCjw8Ci9GaWx0ZXIgWyAvQVNDSUk4NURlY29kZSAvRmxhdGVEZWNvZGUgXSAvTGVuZ3RoIDEwMzIKPj4Kc3RyZWFtCkdhdG4mZ01ZTHAmO0taSi5IVjZtJk5pNzQ0Ijo3NCFFLlpDXWFpZEpDcUdKLj51XkBmcHA8ZiVXTF0+TFVOWUpobTI6RDZCQSxXb2shQWBfXic2UiNpOWEjO1VlaVdDSCw2M04kNlE7JG1ocGtKV1tvUGgvLjY7MShqZixTUCRDOk1ucmNpQEA9QkA0RyFCVVk0LmNmOkplXHBUMEVKY2koMihYTklEUStVIygjLE4pYGY2XkNJVVBUVCIqVipfOzcnNV9sZWhRP1I+dCszTU02MCJaPCg1IlFRSThXN0s3bEZ0VjFSSSErLGwmKS5PRVtRQV51aF8ySS5HSFNeT0wkSGxPXS5kIz5VMG5YJl1YaSVEYkplS0Npa2JVcV1uYVlpQyc/Zz9wcTQ9SjI9ImtcRGYwUzdfKCFhRyk+JC1UKFRrSC9iQFxLRWgpJSZ1RyN1UyhlKGgpKV9LbCphSSI7LzJXYS5kJkNII0ZwJWRmMk1eNz8hMjs4R21SWyFEMllJWzErMCQoJThyS24pWzslMScmUW9pZjFzWjFwQ2hYYVxiTFVna151QihgKGFXY2tbX0I8dWI6bzVjUkZjO3VLXig8aVxxYEdyYUtXYWlvNUUqQWBYYydARSJUcUl1MGdpJzRRImZHLi4lJGBQWVctaFhnOnJXX2pxQ1tWUlRoQDNCPWRMUHQ5M25oSD01UDtBQGNVZ3ArXWNwYShkYTFPajpMU1tgSjluYEYmc0slVTZmaUs+XSxtSydYU21oZnRYXiwkaSImM1JxLWk/LUg1dWlZaXVMXkZBPCEmZU4kPmJCOV0lUlM+RGRDbmw0ZDc7YzlTRFMjPWs7LzwzJj1RQSMiVGg4MWtCLERTNEFQL0dzIkFVY2EoXFZHckwhXiZOKExGUzRLT29vI2dwMzhhMnJzLGchITA8LSFAPlIiV1YhUlgiWkdaIk80WmthRElpYHRXOlBwXTA4ZS0pO2cjTWJkKlplNW5pLylHOTxiQ2wiRWtrPmoqajZzY244Tzk1LDAwNC0+P1syMV5lO2ZrJW9dO246Sms5RS4lU1ghUUJeW2ZQLF5tdVdOJS8+LW45UC05UC8nNDkoY15kZVdJc1E2IipeQVBCKW5IQV1tWTtvamdZRU9nLms7UkEsaWUpKCFIQVAmKSNYKDZSVmlvKSdpV3ApOF8jYGY+KkxQQWR0Yj1pVXRRR0ouaWpVMFkya0NhMFNbQWZVMzhzK2toU05fUHUsMTFIR1pgbUpbbU1lRycwQlAzaz9PRUkkVWhKKV07XD5nIj1nOExfVC5WT1U6Syt0RGNtJGs9OXJNVmpdYic/aF1XKVhcV1RfTUFTZEpCTkdkNls8KS1IdUdpIUFDQnV+PmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDE5CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDA2MSAwMDAwMCBuIAowMDAwMDAwMTIyIDAwMDAwIG4gCjAwMDAwMDAyMjkgMDAwMDAgbiAKMDAwMDAwMDM0MSAwMDAwMCBuIAowMDAwMDAwNDYwIDAwMDAwIG4gCjAwMDAwMDA1NzUgMDAwMDAgbiAKMDAwMDAwMDc3MCAwMDAwMCBuIAowMDAwMDAwOTY1IDAwMDAwIG4gCjAwMDAwMDExNjAgMDAwMDAgbiAKMDAwMDAwMTM1NSAwMDAwMCBuIAowMDAwMDAxNTUxIDAwMDAwIG4gCjAwMDAwMDE2MjEgMDAwMDAgbiAKMDAwMDAwMTk0MiAwMDAwMCBuIAowMDAwMDAyMDI3IDAwMDAwIG4gCjAwMDAwMDQyNDggMDAwMDAgbiAKMDAwMDAwNTgzMSAwMDAwMCBuIAowMDAwMDA4MTkwIDAwMDAwIG4gCjAwMDAwMTA3ODkgMDAwMDAgbiAKdHJhaWxlcgo8PAovSUQgCls8YmU3ZDdkYjZhODdmNzgzODYyNDNiMGU5MzE1YzkyMmQ+PGJlN2Q3ZGI2YTg3Zjc4Mzg2MjQzYjBlOTMxNWM5MjJkPl0KJSBSZXBvcnRMYWIgZ2VuZXJhdGVkIFBERiBkb2N1bWVudCAtLSBkaWdlc3QgKG9wZW5zb3VyY2UpCgovSW5mbyAxMiAwIFIKL1Jvb3QgMTEgMCBSCi9TaXplIDE5Cj4+CnN0YXJ0eHJlZgoxMTkxMwolJUVPRgo=';
+  const btn = document.getElementById('downloadBtn');
+  const blob = new Blob([Uint8Array.from(atob(PDF_B64), c => c.charCodeAt(0))], { type: 'application/pdf' });
+  btn.href = URL.createObjectURL(blob);
+});
+</script>
+</body>
+</html>
