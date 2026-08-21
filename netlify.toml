@@ -1,0 +1,12 @@
+[build]
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/The_APS_Data_Analysis_Protocol.pdf"
+  to = "/The_APS_Data_Analysis_Protocol.pdf"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
